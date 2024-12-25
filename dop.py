@@ -740,8 +740,7 @@ create_auth_buttons(content_frame)
 window_width = 900
 window_height = 500
 center_window(root, window_width, window_height)
-root.focus_set()
 run_docker_on_startup()
 root.protocol("WM_DELETE_WINDOW", on_closing)
-
+root.focus_set()
 root.mainloop()
