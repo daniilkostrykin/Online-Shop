@@ -1,3 +1,4 @@
+import logging
 import json
 import time
 import subprocess
@@ -14,36 +15,35 @@ current_username = None
 cart = {}
 
 
-import psycopg2
-import logging
-from tkinter import messagebox
-
 # Set up logging (optional but useful)
-logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.ERROR,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def get_db_connection():
     try:
         conn = psycopg2.connect(
-        dbname="shop",
-        user="postgres",
-        password="postgres",
-        host="localhost",
-        port="55432"
-    )
-        conn.autocommit = False #Отключаем авто коммит для последующей логики в скрипте.
+            dbname="shop",
+            user="postgres",
+            password="postgres",
+            host="localhost",
+            port="55432"
+        )
+        # Отключаем авто коммит для последующей логики в скрипте.
+        conn.autocommit = False
         return conn
 
     except psycopg2.Error as e:
-         error_msg = f"Ошибка при подключении к базе данных: {e}"
-         logging.error(error_msg) # log with datetime stamp
-         messagebox.showerror("Ошибка",error_msg)
-         return None # Если вызвалась ошибка - возращаем None.
+        error_msg = f"Ошибка при подключении к базе данных: {e}"
+        logging.error(error_msg)  # log with datetime stamp
+        messagebox.showerror("Ошибка", error_msg)
+        return None  # Если вызвалась ошибка - возращаем None.
     except Exception as e:
         error_msg = f"Неизвестная ошибка при подключении к базе данных: {e}"
-        logging.error(error_msg) #log other unexpected errors
-        messagebox.showerror("Ошибка",error_msg)
+        logging.error(error_msg)  # log other unexpected errors
+        messagebox.showerror("Ошибка", error_msg)
         return None
+
 
 def show_login_window():
     for widget in content_frame.winfo_children():
@@ -442,7 +442,7 @@ def show_cart():
 
             # Кнопка "Удалить"
             delete_button = tk.Button(frame, text="Удалить",
-                                       command=lambda item_name=item: remove_from_cart(item_name))
+                                      command=lambda item_name=item: remove_from_cart(item_name))
             delete_button.pack(side=tk.LEFT, padx=5)
 
         clear_cart_button = tk.Button(
@@ -623,19 +623,21 @@ def register_user(username, password):
     else:
         tk.messagebox.showerror("Ошибка", "Введите логин и пароль")
 
+
 def create_auth_buttons(frame):
-   
+
     login_button = tk.Button(frame, text="Войти", command=show_login_window)
     login_button.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-    register_button = tk.Button(frame, text="Зарегистрироваться", command=show_registration_window)
+    register_button = tk.Button(
+        frame, text="Зарегистрироваться", command=show_registration_window)
     register_button.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
 
 def center_window(window, width, height):
     """
     Центрирует окно на экране.
-    
+
     :param window: Ссылка на окно Tkinter.
     :param width: Ширина окна.
     :param height: Высота окна.
@@ -643,13 +645,61 @@ def center_window(window, width, height):
     # Получаем размеры экрана
     screen_width = window.winfo_screenwidth()
     screen_height = window.winfo_screenheight()
-    
+
     # Вычисляем координаты для центра
     x = (screen_width // 2) - (width // 2)
     y = (screen_height // 2) - (height // 2)
-    
+
     # Устанавливаем размеры и положение окна
     window.geometry(f"{width}x{height}+{x}+{y}")
+
+
+def start_docker_and_container():
+    try:
+        # Запуск Docker Desktop
+        print("Запуск Docker Desktop...")
+        if os.name == "nt":  # Windows
+            docker_desktop_path = r"C:\Program Files\Docker\Docker\Docker Desktop.exe"
+            subprocess.Popen([docker_desktop_path], shell=True)
+        else:
+            raise OSError(
+                "Автоматический запуск Docker Desktop поддерживается только на Windows.")
+
+        # Проверяем, запущен ли Docker
+        print("Ожидание запуска Docker...")
+        subprocess.run(["docker", "info"], check=True)
+
+        # Запуск контейнера online-shop
+        print("Запуск контейнера online-shop...")
+        container_name = "online-shop"
+        image_name = "online-shop:latest"
+
+        # Проверяем, существует ли контейнер
+        result = subprocess.run(
+            ["docker", "ps", "-a", "--filter",
+                f"name={container_name}", "--format", "{{.Names}}"],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        existing_container = result.stdout.strip()
+
+        if existing_container:
+            print(f"Контейнер {container_name} уже существует. Запуск...")
+            subprocess.run(["docker", "start", container_name], check=True)
+
+    except subprocess.CalledProcessError as e:
+        print(f"Ошибка при выполнении команды Docker: {e}")
+    except FileNotFoundError:
+        print("Путь к Docker Desktop указан неверно или Docker не установлен.")
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+
+
+def run_docker_on_startup():
+    thread = threading.Thread(target=start_docker_and_container)
+    thread.start()
+
+
 root = tk.Tk()
 root.title("Cool Store")
 
@@ -659,9 +709,10 @@ content_frame.pack(pady=10)
 
 create_auth_buttons(content_frame)
 
-window_width =900
+window_width = 900
 window_height = 500
 center_window(root, window_width, window_height)
-root.focus_set() 
+root.focus_set()
+run_docker_on_startup()
 
 root.mainloop()
