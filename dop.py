@@ -700,6 +700,27 @@ def run_docker_on_startup():
     thread.start()
 
 
+def stop_docker_container():
+    """
+    Останавливает контейнер Docker.
+    """
+    container_name = "online-shop"  # Замените на имя вашего контейнера
+    try:
+        os.system(f"docker stop {container_name}")
+        print(f"Контейнер {container_name} успешно остановлен.")
+    except Exception as e:
+        print(f"Ошибка при остановке контейнера: {e}")
+
+
+def on_closing():
+    """
+    Действия при закрытии окна приложения.
+    """
+    if messagebox.askokcancel("Выход", "Вы уверены, что хотите выйти?"):
+        stop_docker_container()
+        root.destroy()
+
+
 root = tk.Tk()
 root.title("Cool Store")
 
@@ -714,5 +735,6 @@ window_height = 500
 center_window(root, window_width, window_height)
 root.focus_set()
 run_docker_on_startup()
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
 root.mainloop()
