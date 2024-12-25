@@ -46,8 +46,12 @@ def get_db_connection():
 
 
 def show_login_window():
+   
     for widget in content_frame.winfo_children():
-        widget.destroy()
+       widget.destroy()
+    global login_button
+    global register_button 
+    
 
     tk.Label(content_frame, text="Введите логин:").pack(pady=5)
     login_entry = tk.Entry(content_frame)
@@ -57,11 +61,14 @@ def show_login_window():
     password_entry = tk.Entry(content_frame, show="*")
     password_entry.pack(pady=5)
 
+   
     login_button = tk.Button(content_frame, text="Войти",
                              command=lambda: check_login(login_entry.get(), password_entry.get()))
-    login_button.pack(pady=10)
 
-
+    register_button = tk.Button(content_frame, text="Зарегистрироваться", command=show_registration_window)
+    login_button.pack(pady=5)
+    register_button.pack(pady=10)
+ 
 def check_login(login, password):
     global current_user, current_role, current_username
 
